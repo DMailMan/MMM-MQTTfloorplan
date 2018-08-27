@@ -1,5 +1,5 @@
-# Magic Mirror Module: mmm-openhabfloorplan
-This [MagicMirror2](https://github.com/MichMich/MagicMirror) module allows you to show a floorplan of your house / apartment with the current state of lights, window contacts, and labels provided by a running [openhab](http://www.openhab.org/) server (working with openHAB 1.x and 2.x).
+# Magic Mirror Module: MMM-MQTTfloorplan
+This [MagicMirror2](https://github.com/MichMich/MagicMirror) module allows you to show a floorplan of your house / apartment with the current state of lights, window contacts, and labels provided by messages on a series of MQTT message queues.
 Unlike most other modules, the data can be pushed from the openhab server via http requests to the magic mirror, so state changes are immediately shown.
 
 ![Example floorplan](https://forum.magicmirror.builders/uploads/files/1473878353822-openhabfloorplan-running.png "Example floorplan")
@@ -13,25 +13,25 @@ cd ~/MagicMirror/modules
 
 Clone this repository:
 ````
-git clone https://github.com/paphko/mmm-openhabfloorplan.git
+git clone https://github.com/DMailMan/MMM-MQTTfloorplan.git
 ````
 
 ## Preparing the Floorplan
 
 First of all, you should create an image showing your individual floorplan.
-You can use `mmm-openhabfloorplan/images/floorplan-default.png` as template (shown [here](images/README.md)) and use an image editor like [paint.net](http://www.getpaint.net/index.html) to change it as you like.
-Save it as `mmm-openhabfloorplan/images/floorplan.png` (leave `floorplan-default.png` untouched).
+You can use `MMM-MQTTfloorplan/images/floorplan-default.png` as template (shown [here](images/README.md)) and use an image editor like [paint.net](http://www.getpaint.net/index.html) to change it as you like.
+Save it as `MMM-MQTTfloorplan/images/floorplan.png` (leave `floorplan-default.png` untouched).
 
 ## Configuring the Module
 
 Now add the module to the modules array in the `config/config.js` file.
 Yes, the configuration looks complicated, but there is quite a lot that can be configured.
-The in-line comments should explain everything you need to know, so copy this sample configuration and adjust it to your individual openhab server, openhab items, and your floorplan.
+The in-line comments should explain everything you need to know, so copy this sample configuration and adjust it to your individual MQTT server, MQTT topics, and your floorplan.
 When you are done adding all items and positioning them as you like, change `draft` to false.
 ````javascript
 modules: [
 	{
-		module: 'mmm-openhabfloorplan',
+		module: 'MMM-MQTTfloorplan',
 		position: 'bottom_left', // this can be any of the regions
 		config: {
 			updateInterval: 60 * 60 * 1000, // refreshing all windows / lights / labels once per hour; 0 to disable periodic update
@@ -101,31 +101,3 @@ modules: [
 ]
 ````
 
-## Configuring Openhab
-
-If you simply want to pull states with the update interval as configured above, you don't need to do any changes to your openhab configuration.
-But it is really impressive if state changes are immediately (with less than 1sec delay in my case) shown on the mirror!
-
-First, you must have to change MagicMirror config:
-````
-var config = {
-address: "192.168.0.11", // IP of your MM server, for listening on it's @
-port: 8080,
-ipWhitelist: ["127.0.0.1", "::ffff:127.0.0.1", "192.168.0.12", "::1"] // Add IP of your client, for listening since this @ ex:192.168.0.12 
-````
-
-
-The easiest and least invasive way of configuring openhab to push state changes to the magic mirror server, is to add all items you want to update to a group gMagicMirrorItems and create the following rule:
-````
-val String mirrorUrl = "http://<MAGIC_MIRROR_URL>:<MAGIC_MIRROR_PORT>/openhab"
-
-rule "send updates to MagicMirror"
-
-when
-	Member of gMagicMirrorItems changed
-then
-		var url = mirrorUrl + "?item=" + triggeringItem.name + "&state=" + triggeringItem.state
-		sendHttpGetRequest(url)
-		logInfo("MagicMirror","Sent to MM: "+ url)
-end
-````
