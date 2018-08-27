@@ -1,5 +1,5 @@
 Module.register("MMM-mqttfloorplan", {
-        defaults: {
+	defaults: {
 		mqttServer: {
 			url: "http://jeeves.local:1880", // must not have trailing slash!
 			user: "",
@@ -17,7 +17,7 @@ Module.register("MMM-mqttfloorplan", {
 			height: 19, // image height
 		},
 		window: {
-			defaultColor: "red", // css format, i.e. color names or color codes
+			defaultColor: "blue", // css format, i.e. color names or color codes
 		},
 		label: {
 			defaultColor: "grey", // css format
@@ -25,10 +25,10 @@ Module.register("MMM-mqttfloorplan", {
 		},
 		lights: {
 			/* list all light items to be shown, examples below. */
-            // Light_Kitchen: { left: 50, top: 50 }, // name must match MQTT topic name (case sensitive!)
-            // Example of complex payload structure: lighting/status,{"room":"Hall","channel":0,"command":"off"}
+			// Light_Kitchen: { left: 50, top: 50 }, // name must match MQTT topic name (case sensitive!)
+			// Example of complex payload structure: lighting/status,{"room":"Hall","channel":0,"command":"off"}
 			// Ideally you will have a separate topic per light, with an ON/OFF or 0/255 code to show the status
-			'devices/ground/kitchen/lights/status': { left: 50, top: 50 }, 
+			'devices/ground/kitchen/lights/status': { left: 50, top: 50 },
 		},
 		windows: {
 			/* list all window / door contacts to be shown, examples below. */
@@ -37,8 +37,8 @@ Module.register("MMM-mqttfloorplan", {
 			// Reed_Front_Door: { left: 100, top: 20, width: 26, height: 35 }, // rectangular drawing
 			// Reed_Back_Door: { left: 100, top: 50, width: 26, height: 35, color: "orange", }, // color may optionally be overwritten
 			// Reed_Kitchen_Window: { left: 100, top: 100, radius: 30, midPoint: "top-left" }, // wing with specified radius and mid-point location
-            // Reed_Livingroom_Window: { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" }, // wing with counterwindow
-            'devices/ground/kitchen/pir/status': { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" },
+			// Reed_Livingroom_Window: { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" }, // wing with counterwindow
+			'devices/ground/kitchen/pir/status': { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" },
 		},
 		labels: {
 			/* list all strings to be shown, examples below. */
@@ -47,7 +47,33 @@ Module.register("MMM-mqttfloorplan", {
 			// Temperature_Front_Door: { left: 200, top: 150, color: "white", decimals: 2 }, // small and show two decimal places of float value
 			// Temperature_Back_Door: { left: 200, top: 200, prefix: "outside: ", postfix: "°C" }, // label with prefix and postfix
 		},
-        },
+		subscriptions: [
+			{
+				topic: 'sensor/1/temperature',
+				label: 'Temperature',
+				decimals: 1,
+				suffix: '°C',
+				location: { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" },
+			},
+			{
+				topic: 'devices/ground/kitchen/pir/status',
+				label: 'Kitchen PIR',
+				decimals: 0,
+				location: { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" },
+			},
+			{
+				topic: 'guests',
+				label: 'First guest',
+				jsonpointer: '/people/0/name'
+			}
+		]
+	},
+
+	getScripts: function () {
+		return [
+			this.file('node_modules/jsonpointer/jsonpointer.js')
+		];
+	},
 
 	start: function() {
 		Log.info("Starting module: " + this.name);
@@ -60,7 +86,35 @@ Module.register("MMM-mqttfloorplan", {
 		} else {
 			Log.info("No items configured.");
 		}
+
+		this.subscriptions = [];
+
+		console.log(this.name + ': Setting up ' + this.config.subscriptions.length + ' topics');
+
+		for (i = 0; i < this.config.subscriptions.length; i++) {
+			console.log(this.name + ': Adding config ' + this.config.subscriptions[i].label + ' = ' + this.config.subscriptions[i].topic);
+
+			this.subscriptions[i] = {
+				label: this.config.subscriptions[i].label,
+				topic: this.config.subscriptions[i].topic,
+				decimals: this.config.subscriptions[i].decimals,
+				jsonpointer: this.config.subscriptions[i].jsonpointer,
+				suffix: typeof (this.config.subscriptions[i].suffix) == 'undefined' ? '' : this.config.subscriptions[i].suffix,
+				value: ''
+			}
+		}
+
+		this.openMqttConnection();
+		var self = this;
+		setInterval(function () {
+			self.updateDom(1000);
+		}, 10000);
 	},
+
+	openMqttConnection: function () {
+		this.sendSocketNotification('MQTT_CONFIG', this.config);
+	},
+
 	valuesExist: function(obj) { return obj !== 'undefined' && Object.keys(obj).length > 0; },
 
 	socketNotificationReceived: function(notification, payload) {
@@ -81,7 +135,33 @@ Module.register("MMM-mqttfloorplan", {
 			// Log.info("MQTT item received: " + payload.item);
 			this.updateDivForItem(payload.item, payload.state);
 		}
+
+		if(notification === 'MQTT_PAYLOAD'){
+			if(payload != null) {
+                for(i = 0; i < this.subscriptions.length; i++){
+                    if(this.subscriptions[i].topic == payload.topic){
+                        var value = payload.value;
+                        // Extract value if JSON Pointer is configured
+                        if(this.subscriptions[i].jsonpointer) {
+                            value = get(JSON.parse(value), this.subscriptions[i].jsonpointer);
+                        }
+                        // Round if decimals is configured
+                        if(isNaN(this.subscriptions[i].decimals) == false) {
+                            if (isNaN(value) == false){
+                                value = Number(value).toFixed(this.subscriptions[i].decimals);
+                            }
+                        }
+                        this.subscriptions[i].value = value;
+                    }
+                }
+				this.updateDom();
+				this.updateDivForItem(payload.item, payload.state); // This bit from floorplan
+			} else {
+                console.log(this.name + ': MQTT_PAYLOAD - No payload');
+            }
+		}
 	},
+
 	updateDivForItem: function(item, state) {
 		if (item in this.config.lights) {
 			var visible = state == "ON" || (!isNaN(parseInt(state)) && parseInt(state) > 0);
@@ -114,14 +194,14 @@ Module.register("MMM-mqttfloorplan", {
 		return (typeof config.prefix !== 'undefined' ? config.prefix : "") + formattedValue + (typeof config.postfix !== 'undefined' ? config.postfix : "");
 	},
 
-        getDom: function() {
+	getDom: function () {
 		var floorplan = document.createElement("div");
 		floorplan.style.cssText = "background-image:url(" + this.file("/images/" + this.config.floorplan.image) + ");"
 			+ "top:-" + this.config.floorplan.height + "px;width:" + this.config.floorplan.width + "px;height:" + this.config.floorplan.height + "px;";
 		this.appendWindows(floorplan);
 		this.appendLights(floorplan);
 		this.appendLabels(floorplan);
-                return floorplan;
+		return floorplan;
 	},
 
 	appendLights: function(floorplan) {
