@@ -26,8 +26,9 @@ Module.register("MMM-mqttfloorplan", {
 		lights: {
 			/* list all light items to be shown, examples below. */
             // Light_Kitchen: { left: 50, top: 50 }, // name must match MQTT topic name (case sensitive!)
-            // Example of Rako lighting structure: rako/events,{"room":"Hall","channel":0,"command":"off"}
-            'rako/events': { left: 50, top: 50 }, // Actually this won't work - have to decode payload 
+            // Example of complex payload structure: lighting/status,{"room":"Hall","channel":0,"command":"off"}
+			// Ideally you will have a separate topic per light, with an ON/OFF or 0/255 code to show the status
+			'devices/ground/kitchen/lights/status': { left: 50, top: 50 }, 
 		},
 		windows: {
 			/* list all window / door contacts to be shown, examples below. */
