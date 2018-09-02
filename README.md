@@ -2,7 +2,7 @@
 
 ## Untested: this module is still in the very early stages of development and doesn't work yet !
 
-This [MagicMirror2](https://github.com/MichMich/MagicMirror) module allows you to show a floorplan of your house / apartment with the current state of lights, window contacts, and labels provided by messages on a series of MQTT message queues.
+This [MagicMirror2](https://github.com/MichMich/MagicMirror) module allows you to show a floorplan of your house / apartment with the current state of lights, door/window contacts, and labels provided by messages on a series of MQTT message queues.
 Unlike most other modules, the data is frequently read from the queue, so state changes are quickly shown.
 
 Most other floorplan modules require a very specific back-end server such as piMatic or openhab. This module is intended to provide a single front end that can be fed data from any server backend that is able to generate MQTT messages. This visual display is otherwise the same as the OpenHab original floorplan module.
