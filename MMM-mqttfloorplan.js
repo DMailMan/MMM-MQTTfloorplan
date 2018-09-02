@@ -78,7 +78,8 @@ Module.register("MMM-MQTTloorplan", {
 	},
 
 	start: function() {
-		Log.info("Starting module: " + this.name);
+		Log.info("MQTT Starting module: " + this.name);
+		console.log("MQTT Starting module: " + this.name);
 
 		this.subscriptions = [];
 
@@ -116,7 +117,7 @@ Module.register("MMM-MQTTloorplan", {
 	valuesExist: function(obj) { return obj !== 'undefined' && Object.keys(obj).length > 0; },
 
 	socketNotificationReceived: function(notification, payload) {
-        console.log("Notification received: " + notification + " with payload " + payload);
+        console.log("MQTT Notification received: " + notification + " with payload " + payload);
 
 		if(notification === 'MQTT_PAYLOAD'){
 			if(payload != null) {

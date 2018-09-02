@@ -12,6 +12,7 @@ module.exports = NodeHelper.create({
 
 	socketNotificationReceived: function (notification, payload) {
 		var self = this;
+		console.log(self.name + ': Received notification from socket of type' + notification);
 
 		if (notification === 'MQTT_CONFIG') {
 			self.config = payload;
