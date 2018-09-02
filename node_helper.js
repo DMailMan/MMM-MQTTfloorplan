@@ -16,20 +16,9 @@ module.exports = NodeHelper.create({
 		if (notification === 'MQTT_CONFIG') {
 			self.config = payload;
 
-			// Read topics to subscribe to.
-			// Could be either lights or windows, but both represent topic names
-			// Maybe just use a lambda iterator here, not a for loop ?
-			for (i = 0; i < self.config.lights.length; i++) {
-				// Topic names will be the key of the JSON so need different approach to original
-				for (var key in self.config.lights) {
-					var topic = items[key];
-				}
-				topics[i] = self.config.lights[i].topic;
-			}
-
-			// TODO: Will have to simply append to the end of the topics list, rather than address by number
-			for (i = 0; i < self.config.windows.length; i++) {
-				topics[i] = self.config.windows[i].topic;
+			// Read topics to subscribe to from the subscriptions list
+			for (i = 0; i < self.config.subscriptions.length; i++) {
+				topics[i] = self.config.subscriptions[i].topic;
 			}
 
 			self.loaded = true;
@@ -58,7 +47,7 @@ module.exports = NodeHelper.create({
 			});
 
 			self.client.on('message', function (topic, payload) {
-				// Find correct topic
+				// Only pass on messages in a topic that we know about
 				if (topics.includes(topic)) {
 					var value = payload.toString();
 					self.sendSocketNotification('MQTT_PAYLOAD', {

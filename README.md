@@ -32,15 +32,12 @@ Save it as `MMM-MQTTfloorplan/images/floorplan.png` (leave `floorplan-default.pn
 Now add the module to the modules array in the `config/config.js` file.
 Yes, the configuration looks complicated, but there is quite a lot that can be configured.
 The in-line comments should explain everything you need to know, so copy this sample configuration and adjust it to your individual MQTT server, MQTT topics & devices, and your floorplan.
-When you are done adding all items and positioning them as you like, change `draft` to false.
 ````javascript
 modules: [
 	{
 		module: 'MMM-MQTTfloorplan',
 		position: 'bottom_left', // this can be any of the regions
 		config: {
-			updateInterval: 60 * 60 * 1000, // refreshing all windows / lights / labels once per hour; 0 to disable periodic update
-			draft: true, // if true, all lights, windows, and label names are shown; if false, get states from openhab
 			mqttServer: {
 				url: "http://mqtt-broker:1880", // must not have a trailing slash!
 				user: "", // only if you have authentication enabled
