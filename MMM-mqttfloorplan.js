@@ -89,6 +89,7 @@ Module.register("MMM-MQTTloorplan", {
 
 			// Copy the specific config into local storage for this module
 			// Protect against missing entries for optional values to simplify usage later
+			// TODO: Verify whether we actually need to do all this or not. Why not just use the config data ?
 			this.subscriptions[i] = {
 				label: this.config.subscriptions[i].label,
 				topic: this.config.subscriptions[i].topic,
@@ -138,7 +139,7 @@ Module.register("MMM-MQTTloorplan", {
                     }
                 }
 				this.updateDom(); // Not sure if we need this here ?
-				// Not sure if you can use the topic as the item name due to the slashes in it
+				// Not sure if you can use the topic as the item name due to the slashes in it ?
 				// TODO check this out
 				this.updateDivForItem(
 					payload.topic, 
