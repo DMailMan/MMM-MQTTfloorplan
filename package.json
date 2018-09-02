@@ -1,0 +1,10 @@
+{
+    "name": "MMM-MQTTfloorplan",
+    "version": "0.0.1",
+    "description": "Use status payload info from subscribed MQTT message topics to update a floorplan with device statuses.",
+    "author": "David Postle",
+    "dependencies": {
+      "jsonpointer": "^4.0.1",
+      "mqtt": "^2.15.1"
+    }
+  }
