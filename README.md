@@ -1,9 +1,11 @@
 # Magic Mirror Module: MMM-MQTTfloorplan
 
-## Untested: this module is still in the very early stages of development and has not been tested (at all) yet !
+## Untested: this module is still in the very early stages of development and doesn't work yet !
 
 This [MagicMirror2](https://github.com/MichMich/MagicMirror) module allows you to show a floorplan of your house / apartment with the current state of lights, window contacts, and labels provided by messages on a series of MQTT message queues.
-Unlike most other modules, the data is frequently read from the queue, so state changes are immediately shown.
+Unlike most other modules, the data is frequently read from the queue, so state changes are quickly shown.
+
+Most other floorplan modules require a very specific back-end server such as piMatic or openhab. This module is intended to provide a single front end that can be fed data from any server backend that is able to generate MQTT messages. This visual display is otherwise the same as the OpenHab original floorplan module.
 
 ![Example floorplan](https://forum.magicmirror.builders/uploads/files/1473878353822-openhabfloorplan-running.png "Example floorplan")
 
@@ -41,8 +43,8 @@ modules: [
 			draft: true, // if true, all lights, windows, and label names are shown; if false, get states from openhab
 			mqttServer: {
 				url: "http://mqtt-broker:1880", // must not have a trailing slash!
-				// user: "", // only if you have authentication enabled
-				// password: "", // only if you have authentication enabled
+				user: "", // only if you have authentication enabled
+				password: "", // only if you have authentication enabled
 			},
 			floorplan: {
 				image: "floorplan-default.png", // image in subfolder 'images'; change to floorplan.png to avoid git repository changes
@@ -61,18 +63,24 @@ modules: [
 			//	defaultColor: "grey", // css format
 			//	defaultSize: "medium", // value of font-size style, e.g. xx-small, small, medium, large, x-large, 1.2em, 20px
 			// },
-			lights: { // list all light items to be shown 
-				// format: "topic (name is case-sensitive!): { left, top }"
-				L_Living:      { left: 80,  top: 110 },
-				L_Sleeping:    { left: 80,  top: 240 },
-				L_Garden:      { left: 310, top: 5 },
-				L_Terrace:     { left: 70,  top: 5 },
-				L_Front_Door:  { left: 238, top: 310 },
-				L_Front_left:  { left: 40,  top: 310 },
-				L_Front_right: { left: 340, top: 310 },
-				L_Kitchen:     { left: 280, top: 110 },
-				L_Entry:       { left: 210, top: 220 },
+			subscriptions: [
+			{
+				topic: 'devices/ground/kitchen/lights/status',
+				label: 'Ceiling Lights',
+				type: 'light',
+				decimals: 1,
+				// suffix: '°C',
+				display: { left: 50, top: 50 },
 			},
+			{
+				topic: 'devices/ground/kitchen/pir/status',
+				label: 'Kitchen Presence',
+				type: 'motion',		// Not yet implemented
+				decimals: 0,
+				display: { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" },
+			},
+			]
+			// Replace the below with better examples of Subs types
 			windows: { // list all window / door contacts to be shown 
 				// 'topic name': left, top, radius (draws quadrant), midPoint, and optionally counterwindow and color
 				Reed_Door:           { left: 232, top: 289, radius: 32, midPoint: "bottom-right", color: "orange" },
@@ -104,4 +112,4 @@ modules: [
 ````
 
 ## Credits
-This module is a hybrid of both  https://github.com/ottopaulsen/MMM-MQTT and https://github.com/paphko/mmm-openhabfloorplan and wouldn't work without them.
+This module is a hybrid of both  https://github.com/ottopaulsen/MMM-MQTT and https://github.com/paphko/mmm-openhabfloorplan and wouldn't exist without them.

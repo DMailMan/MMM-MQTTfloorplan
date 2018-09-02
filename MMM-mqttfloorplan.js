@@ -1,7 +1,7 @@
-Module.register("MMM-mqttfloorplan", {
+Module.register("MMM-MQTTloorplan", {
 	defaults: {
 		mqttServer: {
-			url: "http://jeeves.local:1880", // must not have trailing slash!
+			url: "http://jeeves.local:1880", // must not have trailing slash! Replace with your MQTT broker address
 			user: "",
 			password: ""
 		},
@@ -12,60 +12,62 @@ Module.register("MMM-mqttfloorplan", {
 			height: 333, // image height
 		},
 		light: {
+			// Default display settings for objects of this type
 			image: "light.png", // located in subfolder 'images'
 			width: 19, // image width
 			height: 19, // image height
 		},
-		window: {
+		door: {
+			// Default display settings for objects of this type
 			defaultColor: "blue", // css format, i.e. color names or color codes
 		},
 		label: {
+			// Default display settings for objects of this type
 			defaultColor: "grey", // css format
 			defaultSize: "medium", // value of font-size style, e.g. xx-small, x-small, small, medium, large, x-large, xx-large, 1.2em, 20px
 		},
-		lights: {
-			/* list all light items to be shown, examples below. */
-			// Light_Kitchen: { left: 50, top: 50 }, // name must match MQTT topic name (case sensitive!)
-			// Example of complex payload structure: lighting/status,{"room":"Hall","channel":0,"command":"off"}
-			// Ideally you will have a separate topic per light, with an ON/OFF or 0/255 code to show the status
-			'devices/ground/kitchen/lights/status': { left: 50, top: 50 },
-		},
-		windows: {
-			/* list all window / door contacts to be shown, examples below. */
-			/* name must match MQTT topic name (case sensitive!) */
-			/* Supported formats are rectangles, single wings, and wings with counterwindow. */
-			// Reed_Front_Door: { left: 100, top: 20, width: 26, height: 35 }, // rectangular drawing
-			// Reed_Back_Door: { left: 100, top: 50, width: 26, height: 35, color: "orange", }, // color may optionally be overwritten
-			// Reed_Kitchen_Window: { left: 100, top: 100, radius: 30, midPoint: "top-left" }, // wing with specified radius and mid-point location
-			// Reed_Livingroom_Window: { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" }, // wing with counterwindow
-			'devices/ground/kitchen/pir/status': { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" },
-		},
-		labels: {
-			/* list all strings to be shown, examples below. */
-			// Temperature_Kitchen: { left: 200, top: 50 }, // label with default color and size
-			// Temperature_Livingroom: { left: 200, top: 100, color: "white", size: "x-small" }, // small and white label
-			// Temperature_Front_Door: { left: 200, top: 150, color: "white", decimals: 2 }, // small and show two decimal places of float value
-			// Temperature_Back_Door: { left: 200, top: 200, prefix: "outside: ", postfix: "°C" }, // label with prefix and postfix
-		},
+			/* Examples of possible Label display settings below. */
+				//  { left: 200, top: 50 }, // label with default color and size
+				//  { left: 200, top: 100, color: "white", size: "x-small" }, // small and white label
+				//  { left: 200, top: 150, color: "white", decimals: 2 }, // small and show two decimal places of float value
+				//  { left: 200, top: 200, prefix: "outside: ", postfix: "°C" }, // label with prefix and postfix
+			// For Lights, only a position is needed, so display format: " { left, top }"
+				//  { left: 80,  top: 110 },
+			// For Doors/Windows, format is left, top, radius (draws quadrant), midPoint, and optionally counterwindow and color
+				//  { left: 232, top: 289, radius: 32, midPoint: "bottom-right", color: "orange" },
+				//  { left: 188, top: 298, radius: 23, midPoint: "bottom-left" },
+				//  { left: 12,  top: 106, radius: 29, midPoint: "top-left", counterwindow: "vertical" },
+				// 	{ left: 90,  top: 301, width: 37, height: 20 }, // Simple rectangle
+			// Not yet implemented Motion type yet, so no examples to offer
 		subscriptions: [
 			{
-				topic: 'sensor/1/temperature',
-				label: 'Temperature',
+				topic: 'devices/ground/kitchen/lights/status',
+				label: 'Ceiling Lights',
+				type: 'light',
 				decimals: 1,
-				suffix: '°C',
-				location: { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" },
+				// suffix: '°C',
+				display: { left: 50, top: 50 },
 			},
 			{
 				topic: 'devices/ground/kitchen/pir/status',
-				label: 'Kitchen PIR',
+				label: 'Kitchen Presence',
+				type: 'motion',		// Not yet implemented
 				decimals: 0,
-				location: { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" },
+				display: { left: 100, top: 150, radius: 25, midPoint: "top-left", counterwindow: "horizontal" },
 			},
 			{
-				topic: 'guests',
-				label: 'First guest',
-				jsonpointer: '/people/0/name'
-			}
+				topic: 'devices/ground/lounge/pir/status',
+				label: 'Lounge presence',
+				type: 'motion',		// Not yet implemented
+//				jsonpointer: '/people/0/name',
+			},
+			{
+				topic: 'devices/ground/kitchen/door/status',
+				label: 'Kitchen patio door',
+				type: 'door',		// Also used for Windows - display options are the same
+//				jsonpointer: '/people/0/name',
+				display: { left: 90,  top: 301, width: 37, height: 20 },
+			},
 		]
 	},
 
@@ -78,29 +80,24 @@ Module.register("MMM-mqttfloorplan", {
 	start: function() {
 		Log.info("Starting module: " + this.name);
 
-		if (this.config.draft) {
-			Log.info("Item states are not loaded because this module is in draft mode");
-		} else if (this.valuesExist(this.config.windows) || this.valuesExist(this.config.lights) || this.valuesExist(this.config.labels)) {
-			// Log.info("Requesting initial item states...");
-			this.sendSocketNotification("GET_MQTT_ITEMS", this.config.mqtt); // request initial item states
-		} else {
-			Log.info("No items configured.");
-		}
-
 		this.subscriptions = [];
 
 		console.log(this.name + ': Setting up ' + this.config.subscriptions.length + ' topics');
 
 		for (i = 0; i < this.config.subscriptions.length; i++) {
-			console.log(this.name + ': Adding config ' + this.config.subscriptions[i].label + ' = ' + this.config.subscriptions[i].topic);
+			console.log(this.name + ': Adding config ' + this.config.subscriptions[i].label + ' = ' + this.config.subscriptions[i].label);
 
+			// Copy the specific config into local storage for this module
+			// Protect against missing entries for optional values to simplify usage later
 			this.subscriptions[i] = {
 				label: this.config.subscriptions[i].label,
 				topic: this.config.subscriptions[i].topic,
-				decimals: this.config.subscriptions[i].decimals,
-				jsonpointer: this.config.subscriptions[i].jsonpointer,
+				type: this.config.subscriptions[i].type,
+				decimals: typeof (this.config.subscriptions[i].decimals) == 'undefined' ? '' : this.config.subscriptions[i].decimals,
+				jsonpointer: typeof (this.config.subscriptions[i].jsonpointer) == 'undefined' ? '' : this.config.subscriptions[i].jsonpointer,
 				suffix: typeof (this.config.subscriptions[i].suffix) == 'undefined' ? '' : this.config.subscriptions[i].suffix,
-				value: ''
+				value: '',
+				display: this.config.subscriptions[i].display,
 			}
 		}
 
@@ -118,31 +115,16 @@ Module.register("MMM-mqttfloorplan", {
 	valuesExist: function(obj) { return obj !== 'undefined' && Object.keys(obj).length > 0; },
 
 	socketNotificationReceived: function(notification, payload) {
-        // Log.info("Notification received: " + notification);
-        // Might only ever receive/process one message at a time 
-        // In which case we don't need the array processing
-
-		if (notification == "MQTT_ITEMS") {
-			// Log.info("MQTT items received: " + JSON.stringify(payload)); // this may be huge!
-            
-            // Figure out structure of JSON format for MQTT messages here
-            var items = this.config.openhab.version === 1 ? payload.item : payload;
-			for (var key in items) {
-				var item = items[key];
-				this.updateDivForItem(item.name, item.state);
-			}
-		} else if (notification == "MQTT_ITEM") {
-			// Log.info("MQTT item received: " + payload.item);
-			this.updateDivForItem(payload.item, payload.state);
-		}
+        console.log("Notification received: " + notification + " with payload " + payload);
 
 		if(notification === 'MQTT_PAYLOAD'){
 			if(payload != null) {
+				var config = {};
                 for(i = 0; i < this.subscriptions.length; i++){
                     if(this.subscriptions[i].topic == payload.topic){
                         var value = payload.value;
                         // Extract value if JSON Pointer is configured
-                        if(this.subscriptions[i].jsonpointer) {
+                        if(this.subscriptions[i].jsonpointer != '') {
                             value = get(JSON.parse(value), this.subscriptions[i].jsonpointer);
                         }
                         // Round if decimals is configured
@@ -151,67 +133,104 @@ Module.register("MMM-mqttfloorplan", {
                                 value = Number(value).toFixed(this.subscriptions[i].decimals);
                             }
                         }
-                        this.subscriptions[i].value = value;
+						this.subscriptions[i].value = value;
+						config = this.subscriptions[i];
                     }
                 }
-				this.updateDom();
-				this.updateDivForItem(payload.item, payload.state); // This bit from floorplan
+				this.updateDom(); // Not sure if we need this here ?
+				// Not sure if you can use the topic as the item name due to the slashes in it
+				// TODO check this out
+				this.updateDivForItem(
+					payload.topic, 
+					payload.value.toUpperCase(), 
+					config);
 			} else {
                 console.log(this.name + ': MQTT_PAYLOAD - No payload');
             }
 		}
 	},
 
-	updateDivForItem: function(item, state) {
-		if (item in this.config.lights) {
-			var visible = state == "ON" || (!isNaN(parseInt(state)) && parseInt(state) > 0);
+	updateDivForItem: function(item, state, config) {
+		// Adjust display acccording to the type of thing that we're dealing with
+
+		if (config.type == 'light') {
+			var visible = state.includes("ON") || state.includes("OPEN") || (!isNaN(parseInt(state)) && parseInt(state) > 0);
 			this.setVisible("mqtt_" + item, visible);
-		} else if (item in this.config.windows) {
-            // TODO: Seems to conflate Off with Open ? Surely they are opposites
-			var visible = state == "OFF" || state == "OPEN";
+
+		} else if (config.type == 'door') {
+			var visible = state.includes("OFF") || state.includes("CLOSED") || (!isNaN(parseInt(state)) && parseInt(state) == 0);
 			this.setVisible("mqtt_" + item, visible);
-			if (this.config.windows[item].counterwindow !== 'undefined' && this.config.windows[item].radius !== 'undefined') {
+			if (config.display.counterwindow !== 'undefined' && config.display.radius !== 'undefined') {
 				this.setVisible("mqtt_" + item + "_counterwindow", visible);
 			}
-		} else if (item in this.config.labels) {
+
+		} else if (config.type == 'label') {
 			var element = document.getElementById("mqtt_" + item);
 			if (element != null) {
-				element.innerHTML = this.formatLabel(state, this.config.labels[item]);
+				element.innerHTML = this.formatLabel(state, config.suffix);
 			}
 		}
+		// TODO: config.type == 'motion'
 	},
+
 	setVisible: function(id, value) {
 		var element = document.getElementById(id);
 		if (element != null) {
 			element.style.display = value ? "block" : "none";
 		}
 	},
+
 	formatLabel: function(value, config) {
 		var formattedValue = value;
 		if (!isNaN(config.decimals) && !isNaN(value)) {
 			formattedValue = parseFloat(value).toFixed(config.decimals);
 		}
-		return (typeof config.prefix !== 'undefined' ? config.prefix : "") + formattedValue + (typeof config.postfix !== 'undefined' ? config.postfix : "");
+		return  (typeof config.prefix !== 'undefined' ? config.prefix : "") + 
+				formattedValue + 
+				(typeof config.suffix !== 'undefined' ? config.suffix : "");
 	},
 
 	getDom: function () {
 		var floorplan = document.createElement("div");
 		floorplan.style.cssText = "background-image:url(" + this.file("/images/" + this.config.floorplan.image) + ");"
 			+ "top:-" + this.config.floorplan.height + "px;width:" + this.config.floorplan.width + "px;height:" + this.config.floorplan.height + "px;";
-		this.appendWindows(floorplan);
-		this.appendLights(floorplan);
-		this.appendLabels(floorplan);
+		
+		this.appendSensors(floorplan);
 		return floorplan;
 	},
 
-	appendLights: function(floorplan) {
-		for (var item in this.config.lights) {
-			var position = this.config.lights[item];
-			floorplan.appendChild(this.getLightDiv(item, position));
+	appendSensors: function(floorplan) {
+		for (var item in this.subscriptions) {
+			var display = this.subscriptions[item].display;
+			var type    = this.subscriptions[item].type;
+
+			if(type == 'light') floorplan.appendChild(this.getLightDiv(item, display));
+			if(type == 'label') floorplan.appendChild(this.getLabelDiv(item, display));
+			if(type == 'door')  floorplan.appendChild(this.getDoorDiv(item,  display));
+			// TODO: if(type == 'motion')  floorplan.appendChild(this.getDoorDiv(item,  display));
+
+			// if a 'counterwindow' is set, we must append another one according to given direction
+			if (display.counterwindow !== 'undefined' && display.radius !== 'undefined') {
+				// clone given window config for other wing of counterwindow: http://stackoverflow.com/questions/728360/how-do-i-correctly-clone-a-javascript-object
+				var counterdisplayConfig = JSON.parse(JSON.stringify(display));
+
+				if (displayConfig.counterwindow == 'horizontal') {
+					counterdisplayConfig.left += displayConfig.radius;
+					counterdisplayConfig.midPoint = this.getMirroredMidPoint(displayConfig.midPoint, true);
+					floorplan.appendChild(this.getDoorDiv(item + "_counterwindow", counterdisplayConfig));
+
+				} else if (displayConfig.counterwindow == 'vertical') {
+					counterdisplayConfig.top += displayConfig.radius;
+					counterdisplayConfig.midPoint = this.getMirroredMidPoint(displayConfig.midPoint, false);
+					floorplan.appendChild(this.getDoorDiv(item + "_counterwindow", counterdisplayConfig));
+				}
+			}
+			
 		}
 	},
+
 	getLightDiv: function(item, position) {
-		// set style: location
+		// set style: display
 		var style = "margin-left:" + position.left + "px;margin-top:" + position.top + "px;position:absolute;"
 			+ "height:" + this.config.light.height + "px;width:" + this.config.light.width + "px;";
 		if (!this.config.draft)
@@ -226,18 +245,12 @@ Module.register("MMM-mqttfloorplan", {
 		return lightDiv;
 	},
 
-	appendLabels: function(floorplan) {
-		for (var item in this.config.labels) {
-			var labelConfig = this.config.labels[item];
-			floorplan.appendChild(this.getLabelDiv(item, labelConfig));
-		}
-	},
 	getLabelDiv: function(item, labelConfig) {
 		// default color and size, but may be overridden for each label
 		var color = this.getSpecificOrDefault(labelConfig.color, this.config.label.defaultColor);
 		var size  = this.getSpecificOrDefault(labelConfig.size,  this.config.label.defaultSize);
 
-		// set style: location, color, font size
+		// set style: display, color, font size
 		var style = "margin-left:" + labelConfig.left + "px;margin-top:" + labelConfig.top + "px;position:absolute;";
 		style += "color:" + color + ";font-size:" + size + ";";
 
@@ -249,58 +262,37 @@ Module.register("MMM-mqttfloorplan", {
 		return labelDiv;
 	},
 
-	appendWindows: function(floorplan) {
-		for (var item in this.config.windows) {
-			// get config for this window, create div, and append it to the floorplan
-			var windowConfig = this.config.windows[item];
-			floorplan.appendChild(this.getWindowDiv(item, windowConfig));
+	getDoorDiv: function(item, doorConfig) {
+		// default color, but may be overridden for each door
+		var color = this.getSpecificOrDefault(doorConfig.color, this.config.door.defaultColor);
 
-			// if 'counterwindow' is set, we must append another one according to given direction
-			if (windowConfig.counterwindow !== 'undefined' && windowConfig.radius !== 'undefined') {
-				// clone given window config for other wing of counterwindow: http://stackoverflow.com/questions/728360/how-do-i-correctly-clone-a-javascript-object
-				var counterwindowConfig = JSON.parse(JSON.stringify(windowConfig));
-				if (windowConfig.counterwindow == 'horizontal') {
-					counterwindowConfig.left += windowConfig.radius
-					counterwindowConfig.midPoint = this.getMirroredMidPoint(windowConfig.midPoint, true);
-					floorplan.appendChild(this.getWindowDiv(item + "_counterwindow", counterwindowConfig));
-				} else if (windowConfig.counterwindow == 'vertical') {
-					counterwindowConfig.top += windowConfig.radius
-					counterwindowConfig.midPoint = this.getMirroredMidPoint(windowConfig.midPoint, false);
-					floorplan.appendChild(this.getWindowDiv(item + "_counterwindow", counterwindowConfig));
-				}
-			}
+		// prepare style with display 
+		var style = "margin-left:" + doorConfig.left + "px;margin-top:" + doorConfig.top + "px;position:absolute;";
+
+		// if radius is set, it's a wing with a radius
+		if (typeof doorConfig.radius !== 'undefined') {
+			var radius = doorConfig.radius;
+			style += this.getRadiusStyle(radius, doorConfig.midPoint) + "height:" + radius + "px;width:" + radius + "px;";
+		} else {
+			// otherwise it's a rectangular door with width and height
+			style += "height:" + doorConfig.height + "px;width:" + doorConfig.width + "px;";
 		}
+
+		// create div representing the door
+		var doorDiv = document.createElement("div");
+		doorDiv.id = 'mqtt_' + item;
+		doorDiv.style.cssText = "background:" + color + ";" + style; // set color, display, and type-specific style
+		return doorDiv
 	},
+
+
 	getMirroredMidPoint: function(midPoint, horizontal) {
 		if (horizontal  && midPoint.endsWith  ("left"))   return midPoint.slice(0, midPoint.indexOf('-')) + "-right";
 		if (horizontal  && midPoint.endsWith  ("right"))  return midPoint.slice(0, midPoint.indexOf('-')) + "-left";
 		if (!horizontal && midPoint.startsWith("top"))    return "bottom" + midPoint.slice(midPoint.indexOf('-'));
 		if (!horizontal && midPoint.startsWith("bottom")) return "top"    + midPoint.slice(midPoint.indexOf('-'));
 	},
-	getWindowDiv: function(item, windowConfig) {
-		// default color, but may be overridden for each window
-		var color = this.getSpecificOrDefault(windowConfig.color, this.config.window.defaultColor);
 
-		// prepare style with location and hide it!
-		var style = "margin-left:" + windowConfig.left + "px;margin-top:" + windowConfig.top + "px;position:absolute;";
-		if (!this.config.draft)
-			style += "display:none;"; // hide by default, do not hide if all items should be shown
-
-		// if radius is set, it's a wing with a radius
-		if (typeof windowConfig.radius !== 'undefined') {
-			var radius = windowConfig.radius;
-			style += this.getRadiusStyle(radius, windowConfig.midPoint) + "height:" + radius + "px;width:" + radius + "px;";
-		} else {
-			// otherwise it's a rectengular window with width and height
-			style += "height:" + windowConfig.height + "px;width:" + windowConfig.width + "px;";
-		}
-
-		// create div representing the window
-		var windowDiv = document.createElement("div");
-		windowDiv.id = 'mqtt_' + item;
-		windowDiv.style.cssText = "background:" + color + ";" + style; // set color, location, and type-specific style
-		return windowDiv
-	},
 	getRadiusStyle: function(radius, midPoint) {
 		// example from: http://1stwebmagazine.com/css-quarter-circle
 		var radiusBounds = "0 0 " + radius + "px 0;"; // default: top-left
@@ -313,6 +305,7 @@ Module.register("MMM-mqttfloorplan", {
 		}
 		return "border-radius: " + radiusBounds + " -moz-border-radius: " + radiusBounds + " -webkit-border-radius: " + radiusBounds;
 	},
+
 	getSpecificOrDefault: function(specificValue, defaultValue) {
 		if (typeof specificValue !== 'undefined')
 			return specificValue; // specific value is defined, so use that one!
