@@ -9,7 +9,7 @@ Module.register("MMM-MQTTfloorplan", {
 		floorplan: {
 			/* store your image as 'floorplan.png' to avoid git repository changes. */
 			// image: "floorplan-default.png", // located in subfolder 'images'
-			image: "Ground-floorplan.png", // located in subfolder 'images'
+			image: "ground-floorplan.png", // located in subfolder 'images'
 			width: 320, // image width
 			height: 466, // image height
 		},
