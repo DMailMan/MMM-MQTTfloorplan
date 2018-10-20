@@ -113,7 +113,7 @@ Module.register("MMM-MQTTfloorplan", {
 						config = this.config.subscriptions[i];
 
 						// Extract value if JSON Pointer is configured
-						if(config.jsonpointer != '') {
+						if(config.jsonpointer) {
 						    value = get(JSON.parse(value), config.jsonpointer);
 						}
 
