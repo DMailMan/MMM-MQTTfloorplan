@@ -12,7 +12,7 @@ module.exports = NodeHelper.create({
 
 	socketNotificationReceived: function (notification, payload) {
 		var self = this;
-		console.log(self.name + ': Received notification from socket of type' + notification);
+		console.log(self.name + ': Received notification from socket of type ' + notification);
 
 		if (notification === 'MQTT_CONFIG') {
 			self.config = payload;
@@ -33,22 +33,34 @@ module.exports = NodeHelper.create({
 
 			self.client = mqtt.connect(server, self.options);
 
+			console.log(self.name + ': Result of client after MQTT connection attempt is ' + String(self.client));
+
 			self.client.on('error', function (err) {
-				console.log(self.name + ': Error: ' + err);
+				console.log(self.name + ': Error: ' + String(err));
 			});
 
 			self.client.on('reconnect', function (err) {
 				self.value = 'reconnecting';
 			});
 
+			self.client.on('offline', function (err) {
+				console.log(self.name + ' Client has gone offline from broker');
+			});
+
 			self.client.on('connect', function (connack) {
 				console.log(self.name + ' connected to ' + self.config.mqttServer.url);
 				console.log(self.name + ': subscribing to ' + topics);
-				self.client.subscribe(topics);
+				self.client.subscribe(topics, function(err) {
+					if (err) { 
+						console.log(self.name + ' Failed to subscribe to topics: ' + String(err) )
+					}
+				});
 			});
 
 			self.client.on('message', function (topic, payload) {
 				// Only pass on messages in a topic that we know about
+				console.log(self.name + ': Received MQTT message from topic ' + topic);
+
 				if (topics.includes(topic)) {
 					var value = payload.toString();
 					self.sendSocketNotification('MQTT_PAYLOAD', {
