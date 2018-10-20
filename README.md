@@ -5,7 +5,7 @@ The display is updated as soon as the MQTT message is seen on the queue.
 
 Most other floorplan modules require a very specific back-end server such as piMatic or openhab. This module is intended to provide a single front end that can be fed data from any server backend that is able to generate MQTT messages. This visual display is otherwise very similar to the OpenHab original floorplan module, with a couple of additions.
 
-One addition is support for a type of object labelled as a 'gate', which can be either the default size (64x64 pixels) or 'tiny' which is 32x32. Open doors and gates are coloure red, and are white when closed.
+One addition is support for a type of object labelled as a 'gate', which can be either the default size (64x64 pixels) or 'tiny' which is 32x32. Open doors and gates are coloured red, and are white when closed.
 
 Another addition is motion-capture objects. These are designed to be fed status updates from passive infrared (PIR) sensors, and will display a red figure in motion when triggered. They will also fade to black over time (default is 20 seconds) after motion is last seen, thus providing a simple 'heat map' of activity in your home.
 
