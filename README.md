@@ -11,7 +11,7 @@ Another addition is motion-capture objects. These are designed to be fed status 
 
 Finally, this module uses images for open doors/windows, rather than drawing quadrants, as the Openhab module did.
 
-![Example floorplan](https://github.com/DMailMan/MMM-MQTTfloorplan/raw/master/images/example-floorplan.png "Example floorplan")
+![Example floorplan](https://github.com/DMailMan/MMM-MQTTfloorplan/blob/master/example-floorplan.PNG "Example floorplan")
 
 ## Installation
 
