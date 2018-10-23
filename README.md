@@ -23,6 +23,8 @@ cd ~/MagicMirror/modules
 Clone this repository:
 ````
 git clone https://github.com/DMailMan/MMM-MQTTfloorplan.git
+cd MMM-MQTTfloorplan
+npm install
 ````
 
 ## Preparing the Floorplan
