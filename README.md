@@ -22,7 +22,7 @@ cd ~/MagicMirror/modules
 
 Clone this repository:
 ````
-git clone https://github.com/DMailMan/MMM-MQTTfloorplan.git
+git clone https://github.com/DMailMan/MMM-MQTTfloorplan.git MMM-MQTTfloorplan
 cd MMM-MQTTfloorplan
 npm install
 ````
