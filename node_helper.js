@@ -33,7 +33,7 @@ module.exports = NodeHelper.create({
 
 			self.client = mqtt.connect(server, self.options);
 
-			console.log(self.name + ': Result of client after MQTT connection attempt is ' + String(self.client));
+			// console.log(self.name + ': Result of client after MQTT connection attempt is ' + String(self.client));
 
 			self.client.on('error', function (err) {
 				console.log(self.name + ': Error: ' + String(err));
