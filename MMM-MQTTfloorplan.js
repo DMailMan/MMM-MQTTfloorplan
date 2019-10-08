@@ -43,8 +43,11 @@ Module.register("MMM-MQTTfloorplan", {
 		motion: {
 			// Default display settings for objects of this type
 			image: "motion-detected-med.png", // located in subfolder 'images'
+			imageTiny: "motion-detected-tiny-v2.png", // located in subfolder 'images'
 			width: 30, // image width
 			height: 52, // image height
+			widthTiny: 18, // image width
+			heightTiny: 32, // image height
 			fadeIntervalS: 20, // How many seconds should we decay the motion icon over ? Do this in 10 steps.
 		},
 		label: {
@@ -113,8 +116,8 @@ Module.register("MMM-MQTTfloorplan", {
 						config = this.config.subscriptions[i];
 
 						// Extract value if JSON Pointer is configured
-						if(config.jsonpointer) {
-						    value = get(JSON.parse(value), config.jsonpointer);
+						if (config.jsonpointer) {
+							value = get(JSON.parse(value), config.jsonpointer);
 						}
 
 						this.updateDivForItem(
@@ -134,17 +137,17 @@ Module.register("MMM-MQTTfloorplan", {
 
 		var element = document.getElementById("mqtt_" + item);
 
-		if (config.type == 'light' ) {
+		if (config.type == 'light') {
 			var visible = state.includes("ON") ||
-						  state.includes("OPEN") ||
-						  (!isNaN(parseInt(state)) && parseInt(state) > 0);
+				state.includes("OPEN") ||
+				(!isNaN(parseInt(state)) && parseInt(state) > 0);
 			this.setVisible("mqtt_" + item, visible);
 
 		} else if (config.type == 'motion') {
 			var visible = state.includes("ON") ||
-						  state.includes("OPEN") ||
-						  (!isNaN(parseInt(state)) && parseInt(state) > 0);
-			
+				state.includes("OPEN") ||
+				(!isNaN(parseInt(state)) && parseInt(state) > 0);
+
 			if (visible) {
 				this.setVisible("mqtt_" + item, visible);
 				if (this.config.timerVars[item]) {
@@ -154,19 +157,18 @@ Module.register("MMM-MQTTfloorplan", {
 				// Don't just set the icon invisible for motion - start a fade-out decay
 				// Multiply fade interval by 100 rather than 1000 to get 10 steps on way to total delay
 				// console.log("Starting decay timer for item " + String(item) + " named " + config.label);
-				this.config.timerVars[item] = setInterval(this.fadeMotionImage, 
-														  this.config.motion.fadeIntervalS * 100, 
-														  item,
-														  this.config.motion.fadeIntervalS,
-														  config);
-
+				this.config.timerVars[item] = setInterval(this.fadeMotionImage,
+					this.config.motion.fadeIntervalS * 100,
+					item,
+					this.config.motion.fadeIntervalS,
+					config);
 			}
 
 		} else if (config.type == 'door') {
-			var closed = state.includes("OFF") || 
-						 state.includes("CLOSED") ||
-						 (!isNaN(parseInt(state)) && (parseInt(state) == 0 || 
-						 parseInt(state) == 23));
+			var closed = state.includes("OFF") ||
+				state.includes("CLOSED") ||
+				(!isNaN(parseInt(state)) && (parseInt(state) == 0 ||
+					parseInt(state) == 23));
 
 			image = closed ? this.config.door.imageClosed : this.config.door.imageOpen;
 
@@ -186,10 +188,10 @@ Module.register("MMM-MQTTfloorplan", {
 			}
 
 		} else if (config.type == 'gates') {
-			var closed = state.includes("OFF") || 
-						 state.includes("CLOSED") ||
-						 (!isNaN(parseInt(state)) && (parseInt(state) == 0 || 
-						 parseInt(state) == 23));
+			var closed = state.includes("OFF") ||
+				state.includes("CLOSED") ||
+				(!isNaN(parseInt(state)) && (parseInt(state) == 0 ||
+					parseInt(state) == 23));
 
 			if (config.display.tiny) {
 				image = closed ? this.config.gates.imageClosedTiny : this.config.gates.imageOpenTiny;
@@ -204,7 +206,7 @@ Module.register("MMM-MQTTfloorplan", {
 	},
 
 
-	fadeMotionImage: function (item, fadeIntervalS, config ) {
+	fadeMotionImage: function (item, fadeIntervalS, config) {
 		// Inside this function, 'this' seems to have the scope of the whole Magic Mirror, not just this module
 		// Must be because the SetInterval function is a Window level operation ?
 		// Means that you can't easily use variables of this module.
@@ -217,7 +219,7 @@ Module.register("MMM-MQTTfloorplan", {
 		opacityVal = 1 - (interval / fadeIntervalS);
 
 		var element = document.getElementById("mqtt_" + item);
-		element.style.opacity = opacityVal <=0 ? 0 : opacityVal;
+		element.style.opacity = opacityVal <= 0 ? 0 : opacityVal;
 		if (element.style.opacity <= 0) {
 			// clearInterval(this.config.timerVars[item]);
 			// Cannot get a reference to the handle inside here to clear the Interval
@@ -307,22 +309,25 @@ Module.register("MMM-MQTTfloorplan", {
 		return labelDiv;
 	},
 
-
 	getMotionDiv: function (item, position) {
+	
+		width = position.tiny ? this.config.motion.widthTiny : this.config.motion.width;
+		height = position.tiny ? this.config.motion.heightTiny : this.config.motion.height;
+		image = position.tiny ? this.config.motion.imageTiny : this.config.motion.image;
+
 		// set style: display
 		var style = "margin-left:" + position.left + "px;margin-top:" + position.top + "px;position:absolute;"
-			+ "height:" + this.config.motion.height + "px;width:" + this.config.motion.width + "px;";
+		+ "height:" + height + "px;width:" + width + "px;";
 
 		// create div, set style and text
 		var motionDiv = document.createElement("div");
 		motionDiv.id = 'mqtt_' + item;
 		motionDiv.style.cssText = style;
 		motionDiv.style.display = "none";	// Always default to hidden - only display if get a message
-		motionDiv.innerHTML = "<img src='" + this.file("/images/" + this.config.motion.image) + "' style='"
-			+ "height:" + this.config.motion.height + "px;width:" + this.config.motion.width + "px;'/>";
+		motionDiv.innerHTML = "<img src='" + this.file("/images/" + image) + "' style='"
+			+ "height:" + height + "px;width:" + width + "px;'/>";
 		return motionDiv;
 	},
-
 
 	getDoorDivImage: function (item, position) {
 		// set style: display
