@@ -43,7 +43,7 @@ var config = {
                                                 topic: 'devices/ground/kitchen/pir/status',
                                                 label: 'Kitchen Presence',
                                                 type: 'motion',
-                                                display: { left: 110, top: 350 },
+                                                display: { left: 110, top: 350, tiny: false },
                                         },
                                         {
                                                 topic: 'devices/ground/kitchen/lights/status',
@@ -73,7 +73,7 @@ var config = {
                                                 topic: 'devices/ground/hallway/temperature/status',
                                                 label: 'Hallway Temp',
                                                 type: 'label',
-                                                display: { left: 60, top: 155, suffix: "°C", decimals: 1 },
+                                                display: { left: 60, top: 155, suffix: "°C", decimals: 1, size: "small", color: "red" },  //Default size > medium / color > grey 
                                         },
                                         {       topic: 'devices/outside/driveway/gates/status',
                                         	label: 'Driveway Gates',
